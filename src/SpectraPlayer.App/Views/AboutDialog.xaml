@@ -1,0 +1,35 @@
+<Window x:Class="SpectraPlayer.App.Views.AboutDialog"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Style="{StaticResource DialogWindow}" Title="About Spectraplayer"
+        Width="470" SizeToContent="Height" WindowStartupLocation="CenterOwner">
+    <StackPanel Margin="30,26,30,24">
+        <Image Source="{StaticResource SpectraLogo}" Width="84" Height="84" HorizontalAlignment="Center"/>
+        <TextBlock Text="Spectraplayer" FontSize="24" FontWeight="SemiBold" HorizontalAlignment="Center" Margin="0,14,0,0"/>
+        <TextBlock x:Name="VersionText" HorizontalAlignment="Center" Margin="0,2,0,0" FontSize="12.5"
+                   Foreground="{StaticResource TextDimBrush}"/>
+
+        <TextBlock TextWrapping="Wrap" TextAlignment="Center" Margin="0,18,0,0" FontSize="13" LineHeight="20"
+                   Text="A simple video player for studying: a tab for each subject, bookmarks and notes, and transcripts made on your own computer."/>
+
+        <Border Height="1" Background="{StaticResource LineBrush}" Margin="0,20,0,16"/>
+
+        <TextBlock Text="Made with" FontSize="12" Foreground="{StaticResource TextDimBrush}"/>
+        <TextBlock Margin="0,6,0,0" TextWrapping="Wrap" FontSize="12.5" LineHeight="19"
+                   Text="mpv (libmpv) for playback  ·  Whisper (whisper.cpp through Whisper.net) for speech recognition  ·  SQLite for your library"/>
+        <TextBlock Margin="0,10,0,0" TextWrapping="Wrap" FontSize="12.5" LineHeight="19" Foreground="{StaticResource TextDimBrush}"
+                   Text="Your videos, notes and transcripts stay on your computer."/>
+
+        <Border Height="1" Background="{StaticResource LineBrush}" Margin="0,18,0,16"/>
+        <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
+            <Image Source="/Assets/neuspectra-light.png" Height="52" RenderOptions.BitmapScalingMode="HighQuality"/>
+            <StackPanel VerticalAlignment="Center" Margin="14,0,0,0">
+                <TextBlock Text="A NeuSpectra product" FontSize="13" Foreground="{StaticResource TextBrush}"/>
+                <TextBlock Text="© 2026 NeuSpectra" FontSize="12" Foreground="{StaticResource TextDimBrush}" Margin="0,2,0,0"/>
+            </StackPanel>
+        </StackPanel>
+
+        <Button Content="Close" IsDefault="True" IsCancel="True" Style="{StaticResource PrimaryButton}"
+                HorizontalAlignment="Center" Margin="0,22,0,0" MinWidth="110" Padding="14,7"/>
+    </StackPanel>
+</Window>

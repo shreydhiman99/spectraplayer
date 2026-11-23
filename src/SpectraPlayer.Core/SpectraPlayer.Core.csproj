@@ -1,0 +1,15 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <RootNamespace>SpectraPlayer.Core</RootNamespace>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Data.Sqlite" Version="8.0.11" />
+    <!-- Speech recognition. CPU runtime only: the Vulkan runtime is 55 MB and only pays off for the small model. -->
+    <PackageReference Include="Whisper.net" Version="1.9.1" />
+    <PackageReference Include="Whisper.net.Runtime" Version="1.9.1" />
+  </ItemGroup>
+  <ItemGroup>
+    <InternalsVisibleTo Include="SpectraPlayer.Core.Tests" />
+  </ItemGroup>
+</Project>

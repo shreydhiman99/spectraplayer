@@ -1,0 +1,13 @@
+bin/
+obj/
+.vs/
+*.user
+*.suo
+TestResults/
+
+# libmpv is fetched with tools/Get-LibMpv.ps1, not committed
+libs/libmpv/*.dll
+libs/libmpv/*.7z
+
+# build output (publish folder, setup program, staged model)
+artifacts/

@@ -1,0 +1,17 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- Throw-away benchmark for milestone 4: audio extraction + Whisper speed. Not part of the solution. -->
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net8.0</TargetFramework>
+    <PlatformTarget>x64</PlatformTarget>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\SpectraPlayer.Core\SpectraPlayer.Core.csproj" />
+    <PackageReference Include="Whisper.net" Version="1.9.1" />
+    <PackageReference Include="Whisper.net.Runtime" Version="1.9.1" />
+    <PackageReference Include="Whisper.net.Runtime.Vulkan" Version="1.9.1" />
+  </ItemGroup>
+  <ItemGroup Condition="Exists('$(MSBuildThisFileDirectory)..\..\libs\libmpv')">
+    <None Include="$(MSBuildThisFileDirectory)..\..\libs\libmpv\*.dll" Link="%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+</Project>

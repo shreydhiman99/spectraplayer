@@ -1,0 +1,34 @@
+Spectraplayer - third-party software
+=====================================
+
+Spectraplayer is made by NeuSpectra. It includes the open-source components below. Each one stays under its own
+licence; the project sites have the full texts.
+
+Video playback
+  mpv / libmpv            https://mpv.io
+                          GNU General Public License (see the mpv site and the build page for the exact terms of the
+                          build supplied here).
+                          Source code: https://github.com/mpv-player/mpv
+                          Windows build: https://github.com/shinchiro/mpv-winbuild-cmake
+  FFmpeg libraries        https://ffmpeg.org  (built into libmpv; LGPL / GPL, see the build page)
+
+Speech recognition (transcripts)
+  Whisper.net             https://github.com/sandrohanea/whisper.net      MIT licence
+  whisper.cpp             https://github.com/ggml-org/whisper.cpp         MIT licence
+  Whisper speech model    https://github.com/openai/whisper               MIT licence
+                          (the ggml-base.en-q5_1 file, converted for whisper.cpp by ggml-org, if included)
+
+Library and storage
+  SQLite                  https://sqlite.org                              public domain
+  Microsoft.Data.Sqlite   https://github.com/dotnet/efcore                MIT licence
+  SQLitePCLRaw            https://github.com/ericsink/SQLitePCL.raw       Apache License 2.0
+
+Platform
+  .NET runtime and Windows Presentation Foundation
+                          https://github.com/dotnet/runtime               MIT licence
+
+Fonts
+  The interface uses Segoe UI and Segoe MDL2 Assets, which are part of Windows and are not redistributed here.
+
+Names and logos
+  NeuSpectra and the NeuSpectra logo belong to NeuSpectra.

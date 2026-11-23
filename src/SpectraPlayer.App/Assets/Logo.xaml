@@ -1,0 +1,68 @@
+<!--
+    The Spectraplayer logo, drawn once. The app uses it (title bar, welcome screen, About) and tools/IconGen renders the same
+    drawing into Assets/spectraplayer.ico, so the icon can never drift from what is on screen.
+    128 x 128 units: a dark rounded badge, a play triangle in a blue-to-violet gradient, and three "spectrum" bars.
+-->
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+    <LinearGradientBrush x:Key="SpectraBadgeBrush" StartPoint="0,0" EndPoint="1,1">
+        <GradientStop Color="#252C52" Offset="0"/>
+        <GradientStop Color="#0C0D12" Offset="1"/>
+    </LinearGradientBrush>
+
+    <LinearGradientBrush x:Key="SpectraTriangleBrush" StartPoint="0,0" EndPoint="1,1">
+        <GradientStop Color="#78B4FF" Offset="0"/>
+        <GradientStop Color="#9A7CFF" Offset="1"/>
+    </LinearGradientBrush>
+
+    <DrawingImage x:Key="SpectraLogo">
+        <DrawingImage.Drawing>
+            <DrawingGroup>
+                <!-- invisible full-size square so the image always keeps its 128 x 128 frame -->
+                <GeometryDrawing Brush="Transparent">
+                    <GeometryDrawing.Geometry>
+                        <RectangleGeometry Rect="0,0,128,128"/>
+                    </GeometryDrawing.Geometry>
+                </GeometryDrawing>
+
+                <!-- badge, with a faint light edge -->
+                <GeometryDrawing Brush="{StaticResource SpectraBadgeBrush}">
+                    <GeometryDrawing.Pen>
+                        <Pen Thickness="2" Brush="#33FFFFFF"/>
+                    </GeometryDrawing.Pen>
+                    <GeometryDrawing.Geometry>
+                        <RectangleGeometry Rect="3,3,122,122" RadiusX="28" RadiusY="28"/>
+                    </GeometryDrawing.Geometry>
+                </GeometryDrawing>
+
+                <!-- spectrum bars -->
+                <GeometryDrawing Brush="#FFC857">
+                    <GeometryDrawing.Geometry>
+                        <RectangleGeometry Rect="19,54,9,20" RadiusX="4.5" RadiusY="4.5"/>
+                    </GeometryDrawing.Geometry>
+                </GeometryDrawing>
+                <GeometryDrawing Brush="#4DD0C8">
+                    <GeometryDrawing.Geometry>
+                        <RectangleGeometry Rect="32,40,9,48" RadiusX="4.5" RadiusY="4.5"/>
+                    </GeometryDrawing.Geometry>
+                </GeometryDrawing>
+                <GeometryDrawing Brush="#7FB3FF">
+                    <GeometryDrawing.Geometry>
+                        <RectangleGeometry Rect="45,48,9,32" RadiusX="4.5" RadiusY="4.5"/>
+                    </GeometryDrawing.Geometry>
+                </GeometryDrawing>
+
+                <!-- play triangle: filled and stroked with the same brush so its corners come out rounded -->
+                <GeometryDrawing Brush="{StaticResource SpectraTriangleBrush}">
+                    <GeometryDrawing.Pen>
+                        <Pen Thickness="11" LineJoin="Round" Brush="{StaticResource SpectraTriangleBrush}"/>
+                    </GeometryDrawing.Pen>
+                    <GeometryDrawing.Geometry>
+                        <PathGeometry Figures="M 70,38 L 101,64 L 70,90 Z"/>
+                    </GeometryDrawing.Geometry>
+                </GeometryDrawing>
+            </DrawingGroup>
+        </DrawingImage.Drawing>
+    </DrawingImage>
+</ResourceDictionary>

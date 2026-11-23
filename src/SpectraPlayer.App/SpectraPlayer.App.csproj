@@ -1,0 +1,45 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net8.0-windows</TargetFramework>
+    <UseWPF>true</UseWPF>
+    <RootNamespace>SpectraPlayer.App</RootNamespace>
+    <AssemblyName>Spectraplayer</AssemblyName>
+    <!-- libmpv is 64-bit only. -->
+    <PlatformTarget>x64</PlatformTarget>
+    <ApplicationIcon>Assets\spectraplayer.ico</ApplicationIcon>
+    <!-- Do not ship translated copies of framework strings the app never shows. -->
+    <SatelliteResourceLanguages>en</SatelliteResourceLanguages>
+    <Product>Spectraplayer</Product>
+    <Company>NeuSpectra</Company>
+    <Authors>NeuSpectra</Authors>
+    <Copyright>© 2026 NeuSpectra</Copyright>
+    <Description>A simple video player for studying: a tab per subject, bookmarks, notes and offline transcripts.</Description>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Resource Include="Assets\spectraplayer.ico" />
+    <Resource Include="Assets\neuspectra-light.png" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Using Include="System.IO" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\SpectraPlayer.Core\SpectraPlayer.Core.csproj" />
+  </ItemGroup>
+
+  <!-- Whisper.net and SQLite ship native files for every platform; a Windows 64-bit app only needs the win-x64 ones. -->
+  <Target Name="PruneForeignRuntimes" AfterTargets="Publish" Condition="'$(RuntimeIdentifier)' == 'win-x64'">
+    <RemoveDir Directories="$(PublishDir)runtimes\linux-arm;$(PublishDir)runtimes\linux-arm64;$(PublishDir)runtimes\linux-x64;$(PublishDir)runtimes\macos-arm64;$(PublishDir)runtimes\macos-x64;$(PublishDir)runtimes\win-arm64;$(PublishDir)runtimes\win-x86" />
+  </Target>
+
+  <!-- Ship libmpv next to the exe when it has been fetched into libs\libmpv (see tools\Get-LibMpv.ps1). -->
+  <ItemGroup Condition="Exists('$(MSBuildThisFileDirectory)..\..\libs\libmpv')">
+    <None Include="$(MSBuildThisFileDirectory)..\..\libs\libmpv\*.dll"
+          Link="%(Filename)%(Extension)"
+          CopyToOutputDirectory="PreserveNewest"
+          CopyToPublishDirectory="PreserveNewest" />
+  </ItemGroup>
+</Project>
