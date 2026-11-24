@@ -237,6 +237,42 @@ because the video surface can take keyboard focus for itself.
   The opaque field (PotPlayer's thumbnail data) is preserved on round trips. This format comes from community
   documentation, not an official spec; it has been tested here against the documented layout only.
 
+## Android
+
+`android/` is a separate, native Android app (Kotlin, Jetpack Compose, Media3 ExoPlayer) with the same ideas as the Windows
+player and the same colours: one tab per subject folder, a playlist with each video's length and the total as `00:00:00`,
+resume positions, watched marks, bookmarks (PotPlayer `.pbf` import and export, and a banner when a `.pbf` sits next to the
+video), timestamped notes with Markdown sharing, the focus timer, speed, fullscreen, and a landscape layout with the panel
+beside the video. Folders are picked with Android's folder picker (no storage permission is needed), and "Open with
+Spectraplayer" works from file managers.
+
+```powershell
+cd android
+$env:JAVA_HOME = "$PWD\.tools\jdk17"      # JDK 17 for the Android Gradle plugin (or any JDK 17)
+.\gradlew.bat :app:testDebugUnitTest      # unit tests (times, natural sort, .pbf, notes export, focus timer)
+.\gradlew.bat :app:assembleRelease        # app\build\outputs\apk\release\app-release.apk
+```
+
+The release APK is signed with the standard debug/test key, which is fine for installing it on your own phone (enable
+"install unknown apps" for your file manager or browser, or `adb install`). Sign with your own key to publish.
+
+**Transcripts** work on the phone too: the Transcript tab marks a section (set start / set end, last 2 or 5 minutes, or the
+whole video; it shows as a violet band on the seek bar) and turns its speech into text with whisper.cpp, built into the app
+with the NDK. The audio is decoded with Android's own codecs, so no extra program is needed. Long sections are done in
+two-minute chunks that are saved as they finish, so cancelling loses at most the chunk in progress and nothing is ever
+transcribed twice. You can read along (the current line is highlighted), tap a line to jump to it, turn lines into notes,
+copy, or share as Markdown or `.srt` text. The speech model (Standard, 57 MB, or Better accuracy, 181 MB; the same files as
+the Windows app, checksum-verified) is **not in the APK**: the first time you transcribe, the app asks before downloading it
+from Hugging Face, once. The recognising itself happens on the phone; nothing else is sent.
+
+To build with transcripts you need the NDK and CMake (`sdkmanager "ndk;27.2.12479018" "cmake;3.22.1"`) and the whisper.cpp
+source, which is downloaded rather than committed: `android\tools\Get-WhisperCpp.ps1`.
+
+Android's own media framework doesn't read `.avi` or `.wmv`, so those files won't play (`.mp4`, `.mkv`, `.webm`, `.ts`,
+`.mov`, `.3gp` and the usual audio formats do).
+Tip when testing with the Android emulator on a PC that also has an old standalone `adb.exe` on its PATH: put the SDK's
+`platform-tools` first, or the two adb versions keep killing each other's server.
+
 ## Roadmap
 
 1. ~~Player shell, bookmarks~~
