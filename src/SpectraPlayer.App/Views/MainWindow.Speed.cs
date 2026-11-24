@@ -42,5 +42,10 @@ public partial class MainWindow
 
     private void OnShortcutsClick(object sender, RoutedEventArgs e) => ShowShortcuts();
 
-    private void ShowShortcuts() => new ShortcutsDialog { Owner = this }.ShowDialog();
+    private void ShowShortcuts()
+    {
+        var dialog = new ShortcutsDialog { Owner = this };
+        dialog.ShowDialog();
+        if (dialog.ChangeRequested) ShowSettings();
+    }
 }

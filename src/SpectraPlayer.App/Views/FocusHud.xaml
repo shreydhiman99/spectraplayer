@@ -1,0 +1,19 @@
+<Window x:Class="SpectraPlayer.App.Views.FocusHud"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:c="clr-namespace:SpectraPlayer.App.Controls"
+        WindowStyle="None" AllowsTransparency="True" Background="Transparent" ResizeMode="NoResize"
+        ShowInTaskbar="False" ShowActivated="False" Topmost="True" SizeToContent="WidthAndHeight" Focusable="False"
+        Title="Focus timer" FontFamily="Segoe UI" Foreground="{StaticResource TextBrush}" Opacity="0">
+    <!-- the corner display in fullscreen: small, translucent, never in the way of the mouse -->
+    <Border Height="40" CornerRadius="20" BorderThickness="1" Padding="8,0,16,0"
+            Background="#C712141B" BorderBrush="#E6232736">
+        <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+            <c:RingProgress x:Name="Ring" Width="26" Height="26" Thickness="3" TrackBrush="{StaticResource HoverBrush}"
+                            ArcBrush="{StaticResource FocusBrush}"/>
+            <TextBlock x:Name="TimeText" Margin="10,0,0,0" VerticalAlignment="Center" FontFamily="Consolas" FontSize="15"/>
+            <TextBlock x:Name="LabelText" Margin="10,0,0,0" VerticalAlignment="Center" FontSize="12"
+                       Foreground="{StaticResource TextDimBrush}"/>
+        </StackPanel>
+    </Border>
+</Window>

@@ -15,13 +15,16 @@ public sealed record ProgressRecord(string Path, TimeSpan Position, TimeSpan Dur
     public bool IsWatched => Fraction >= 0.9;
 }
 
+/// <summary>A stored video length. A zero duration means the file was tried and has no readable length.</summary>
+public sealed record DurationRecord(string Path, long Size, long ModifiedTicks, TimeSpan Duration);
+
 /// <summary>
 /// The user's library in one SQLite file: which folders are open as tabs, per-video resume positions, and a few settings.
 /// Playlists themselves are not stored; they are read from the folder each time, so they never go stale.
 /// </summary>
 public sealed class LibraryStore : IDisposable
 {
-    private const int SchemaVersion = 3;
+    private const int SchemaVersion = 4;
 
     private readonly SqliteConnection _db;
     private readonly object _gate = new();
@@ -103,7 +106,44 @@ public sealed class LibraryStore : IDisposable
             CREATE INDEX IF NOT EXISTS ix_ranges ON transcribed_ranges (video_path, model);
             """);
 
+        if (version < 4) Execute("""
+            CREATE TABLE IF NOT EXISTS media_durations (
+                path           TEXT    PRIMARY KEY COLLATE NOCASE,
+                size_bytes     INTEGER NOT NULL,
+                modified_ticks INTEGER NOT NULL,
+                duration_ms    INTEGER NOT NULL
+            );
+            """);
+
         if (version < SchemaVersion) Execute($"PRAGMA user_version = {SchemaVersion}");
+    }
+
+    // ---- video lengths ---------------------------------------------------------------------------------------
+
+    /// <summary>Stores how long a file is, together with the size and modification time it had then (to spot a changed file).</summary>
+    public void SaveDuration(string path, long sizeBytes, long modifiedTicks, TimeSpan duration) =>
+        Execute("""
+            INSERT INTO media_durations (path, size_bytes, modified_ticks, duration_ms) VALUES ($p, $s, $m, $d)
+            ON CONFLICT(path) DO UPDATE SET size_bytes = $s, modified_ticks = $m, duration_ms = $d
+            """,
+            ("$p", Path.GetFullPath(path)), ("$s", sizeBytes), ("$m", modifiedTicks), ("$d", (long)duration.TotalMilliseconds));
+
+    /// <summary>All stored lengths for files under the folder, keyed by full path (case-insensitive).</summary>
+    public IReadOnlyDictionary<string, DurationRecord> GetDurationsUnder(string folder)
+    {
+        var prefix = NormalizeFolder(folder) + Path.DirectorySeparatorChar;
+        lock (_gate)
+        {
+            using var cmd = Command(
+                "SELECT path, size_bytes, modified_ticks, duration_ms FROM media_durations WHERE substr(path, 1, $n) = $prefix COLLATE NOCASE",
+                ("$n", prefix.Length), ("$prefix", prefix));
+            using var reader = cmd.ExecuteReader();
+            var map = new Dictionary<string, DurationRecord>(StringComparer.OrdinalIgnoreCase);
+            while (reader.Read())
+                map[reader.GetString(0)] = new DurationRecord(reader.GetString(0), reader.GetInt64(1), reader.GetInt64(2),
+                    TimeSpan.FromMilliseconds(reader.GetInt64(3)));
+            return map;
+        }
     }
 
     // ---- transcripts -----------------------------------------------------------------------------------------

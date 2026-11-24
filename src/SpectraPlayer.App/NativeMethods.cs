@@ -56,6 +56,42 @@ internal static class NativeMethods
         return true;
     }
 
+    private const int GWL_EXSTYLE = -20;
+    private const int WS_EX_TRANSPARENT = 0x20, WS_EX_TOOLWINDOW = 0x80, WS_EX_NOACTIVATE = 0x08000000;
+
+    [DllImport("user32.dll", EntryPoint = "GetWindowLongW")] private static extern int GetWindowLong(IntPtr hwnd, int index);
+    [DllImport("user32.dll", EntryPoint = "SetWindowLongW")] private static extern int SetWindowLong(IntPtr hwnd, int index, int value);
+
+    /// <summary>Makes a window ignore the mouse (clicks fall through to what is behind it) and never take focus.</summary>
+    public static void MakeOverlayClickThrough(Window window)
+    {
+        var hwnd = new WindowInteropHelper(window).Handle;
+        if (hwnd == IntPtr.Zero) return;
+        SetWindowLong(hwnd, GWL_EXSTYLE, GetWindowLong(hwnd, GWL_EXSTYLE) | WS_EX_TRANSPARENT | WS_EX_NOACTIVATE | WS_EX_TOOLWINDOW);
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    private struct POINT { public int X, Y; }
+
+    [DllImport("user32.dll")] private static extern bool GetCursorPos(out POINT point);
+    [DllImport("user32.dll")] private static extern IntPtr WindowFromPoint(POINT point);
+    [DllImport("user32.dll")] private static extern IntPtr GetAncestor(IntPtr hwnd, uint flags);
+
+    /// <summary>The mouse position on screen, in pixels.</summary>
+    public static bool TryGetCursor(out Point pixels)
+    {
+        var ok = GetCursorPos(out var p);
+        pixels = new Point(p.X, p.Y);
+        return ok;
+    }
+
+    /// <summary>The top-level window under a screen point (for a child window such as the video, the window that owns it).</summary>
+    public static IntPtr TopLevelWindowAt(Point pixels)
+    {
+        var hwnd = WindowFromPoint(new POINT { X = (int)pixels.X, Y = (int)pixels.Y });
+        return hwnd == IntPtr.Zero ? IntPtr.Zero : GetAncestor(hwnd, 2 /* GA_ROOT */);
+    }
+
     public static void MoveWindowPixels(Window window, Int32Rect bounds)
     {
         var hwnd = new WindowInteropHelper(window).Handle;

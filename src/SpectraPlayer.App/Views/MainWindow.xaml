@@ -7,7 +7,7 @@
         WindowStartupLocation="CenterScreen" FontFamily="Segoe UI" UseLayoutRounding="True"
         Background="{StaticResource BgBrush}" Foreground="{StaticResource TextBrush}"
         SourceInitialized="OnSourceInitialized" StateChanged="OnStateChanged"
-        PreviewKeyDown="OnPreviewKeyDown" Closing="OnClosing">
+        PreviewKeyDown="OnPreviewKeyDown" PreviewMouseDown="OnAnyMouseDown" Closing="OnClosing">
 
     <!-- Our own title bar replaces the Windows one (which Windows 10 paints in the user's accent colour). -->
     <shell:WindowChrome.WindowChrome>
@@ -19,24 +19,26 @@
         <BooleanToVisibilityConverter x:Key="BoolToVis"/>
 
         <ContextMenu x:Key="PlayerMenu">
-            <MenuItem Header="Open file…" InputGestureText="Ctrl+O" Click="OnOpenClick"/>
-            <MenuItem Header="Add folder as tab…" InputGestureText="Ctrl+T" Click="OnNewTabClick"/>
+            <!-- Tag = the action whose key is shown on the right (kept up to date when shortcuts change) -->
+            <MenuItem Header="Open file…" Tag="OpenFile" Click="OnOpenClick"/>
+            <MenuItem Header="Add folder as tab…" Tag="NewTab" Click="OnNewTabClick"/>
             <Separator/>
-            <MenuItem Header="Play / Pause" InputGestureText="Space" Click="OnPlayClick"/>
-            <MenuItem Header="Previous video" InputGestureText="PgUp" Click="OnPreviousClick"/>
-            <MenuItem Header="Next video" InputGestureText="PgDn" Click="OnNextClick"/>
-            <MenuItem Header="Fullscreen" InputGestureText="Enter" Click="OnFullscreenClick"/>
+            <MenuItem Header="Play / Pause" Tag="TogglePause" Click="OnPlayClick"/>
+            <MenuItem Header="Previous video" Tag="PreviousVideo" Click="OnPreviousClick"/>
+            <MenuItem Header="Next video" Tag="NextVideo" Click="OnNextClick"/>
+            <MenuItem Header="Fullscreen" Tag="ToggleFullscreen" Click="OnFullscreenClick"/>
             <Separator/>
-            <MenuItem Header="Playlist" InputGestureText="F6" Click="OnTogglePlaylistClick"/>
-            <MenuItem Header="Take note…" InputGestureText="N" Click="OnTakeNoteClick"/>
-            <MenuItem Header="Mark section start" InputGestureText="I" Click="OnSectionStartClick"/>
-            <MenuItem Header="Mark section end" InputGestureText="O" Click="OnSectionEndClick"/>
-            <MenuItem Header="Add bookmark" InputGestureText="Ctrl+B" Click="OnAddBookmarkClick"/>
-            <MenuItem Header="Bookmarks" InputGestureText="H" Click="OnToggleBookmarksClick"/>
+            <MenuItem Header="Playlist" Tag="TogglePlaylist" Click="OnTogglePlaylistClick"/>
+            <MenuItem Header="Take note…" Tag="NewNote" Click="OnTakeNoteClick"/>
+            <MenuItem Header="Mark section start" Tag="MarkSectionStart" Click="OnSectionStartClick"/>
+            <MenuItem Header="Mark section end" Tag="MarkSectionEnd" Click="OnSectionEndClick"/>
+            <MenuItem Header="Add bookmark" Tag="AddBookmark" Click="OnAddBookmarkClick"/>
+            <MenuItem Header="Bookmarks" Tag="ToggleBookmarks" Click="OnToggleBookmarksClick"/>
             <MenuItem Header="Import bookmarks (.pbf)…" Click="OnImportBookmarks"/>
             <MenuItem Header="Export bookmarks (.pbf)…" Click="OnExportBookmarks"/>
             <Separator/>
-            <MenuItem Header="Keyboard shortcuts…" InputGestureText="F1" Click="OnShortcutsClick"/>
+            <MenuItem Header="Settings…" Tag="OpenSettings" Click="OnSettingsClick"/>
+            <MenuItem Header="Keyboard shortcuts…" Tag="ShowShortcuts" Click="OnShortcutsClick"/>
             <MenuItem Header="About Spectraplayer…" Click="OnAboutClick"/>
             <MenuItem Header="Exit" Click="OnExitClick"/>
         </ContextMenu>
@@ -49,7 +51,7 @@
             <MenuItem Header="Move left" Click="OnTabMoveLeft"/>
             <MenuItem Header="Move right" Click="OnTabMoveRight"/>
             <Separator/>
-            <MenuItem Header="Close tab" InputGestureText="Ctrl+W" Click="OnTabClose"/>
+            <MenuItem Header="Close tab" Tag="CloseTab" Click="OnTabClose"/>
         </ContextMenu>
 
         <ContextMenu x:Key="PlaylistItemMenu">
@@ -109,8 +111,11 @@
                     <Button Style="{StaticResource CaptionCloseButton}" Content="&#xE8BB;" ToolTip="Close" Click="OnCloseClick"/>
                 </StackPanel>
 
-                <Button DockPanel.Dock="Right" Style="{StaticResource IconButton}" Content="&#xE710;" Margin="2,0,10,0" Height="28"
-                        shell:WindowChrome.IsHitTestVisibleInChrome="True" ToolTip="Add folder as tab (Ctrl+T)" Click="OnNewTabClick"/>
+                <Button x:Name="SettingsButton" DockPanel.Dock="Right" Style="{StaticResource IconButton}" Content="&#xE713;" Width="34" Height="28"
+                        FontSize="15" shell:WindowChrome.IsHitTestVisibleInChrome="True" ToolTip="Settings" Click="OnSettingsClick"/>
+
+                <Button x:Name="NewTabButton" DockPanel.Dock="Right" Style="{StaticResource IconButton}" Content="&#xE710;" Margin="2,0,2,0" Height="28"
+                        shell:WindowChrome.IsHitTestVisibleInChrome="True" ToolTip="Add folder as tab" Click="OnNewTabClick"/>
 
                 <Grid>
                     <ListBox x:Name="TabList" Style="{StaticResource TabListBox}" HorizontalAlignment="Left"
@@ -127,7 +132,7 @@
                             <DataTemplate>
                                 <DockPanel LastChildFill="True" ToolTip="{Binding Folder}">
                                     <Button DockPanel.Dock="Right" Style="{StaticResource TabCloseButton}" Margin="6,0,0,0"
-                                            ToolTip="Close tab (Ctrl+W)"/>
+                                            ToolTip="Close tab"/>
                                     <TextBlock Text="{Binding Title}" TextTrimming="CharacterEllipsis"
                                                VerticalAlignment="Center" FontSize="12.5"/>
                                 </DockPanel>
@@ -179,14 +184,14 @@
                                     <StackPanel>
                                         <TextBlock Text="&#xE8E5;" FontFamily="Segoe MDL2 Assets" FontSize="19" Foreground="{StaticResource AccentHoverBrush}"/>
                                         <TextBlock Text="Open a video" FontSize="14" FontWeight="SemiBold" Margin="0,6,0,0"/>
-                                        <TextBlock Text="Ctrl+O" FontSize="12" Foreground="{StaticResource TextDimBrush}" Margin="0,2,0,0"/>
+                                        <TextBlock x:Name="WelcomeOpenHint" Text="Ctrl+O" FontSize="12" Foreground="{StaticResource TextDimBrush}" Margin="0,2,0,0"/>
                                     </StackPanel>
                                 </Button>
                                 <Button Grid.Column="2" Style="{StaticResource WelcomeButton}" Click="OnNewTabClick">
                                     <StackPanel>
                                         <TextBlock Text="&#xE838;" FontFamily="Segoe MDL2 Assets" FontSize="19" Foreground="{StaticResource MarkerBrush}"/>
                                         <TextBlock Text="Add a folder as a tab" FontSize="14" FontWeight="SemiBold" Margin="0,6,0,0"/>
-                                        <TextBlock Text="One tab per subject  ·  Ctrl+T" FontSize="12" Foreground="{StaticResource TextDimBrush}" Margin="0,2,0,0"/>
+                                        <TextBlock x:Name="WelcomeTabHint" Text="One tab per subject  ·  Ctrl+T" FontSize="12" Foreground="{StaticResource TextDimBrush}" Margin="0,2,0,0"/>
                                     </StackPanel>
                                 </Button>
                             </Grid>
@@ -238,25 +243,34 @@
             </Grid>
 
             <!-- Side panel: playlist of the active tab, or bookmarks of the current video -->
-            <Border x:Name="SidePanel" Grid.Column="1" Width="340"
+            <!-- The panel is 340 wide, drawn from its left edge, and clipped: animating the Border's width (or the width of
+                 the window that holds it, see MainWindow.Panel.cs) slides the content in and out without re-flowing it. -->
+            <Border x:Name="SidePanel" Grid.Column="1" Width="340" HorizontalAlignment="Left" ClipToBounds="True"
                     Background="{StaticResource PanelBrush}" BorderBrush="{StaticResource LineBrush}" BorderThickness="1,0,0,0">
-                <Grid>
+                <Grid Width="339" HorizontalAlignment="Left">
                     <Grid.RowDefinitions>
                         <RowDefinition Height="Auto"/>
                         <RowDefinition Height="*"/>
                     </Grid.RowDefinitions>
 
                     <Border BorderBrush="{StaticResource LineBrush}" BorderThickness="0,0,0,1">
-                        <StackPanel Orientation="Horizontal">
-                            <RadioButton x:Name="PanelPlaylistButton" GroupName="Panel" Content="Playlist" IsChecked="True"
-                                         Style="{StaticResource SegmentButton}" Click="OnPanelPlaylistClick"/>
-                            <RadioButton x:Name="PanelNotesButton" GroupName="Panel" Content="Notes"
-                                         Style="{StaticResource SegmentButton}" Click="OnPanelNotesClick"/>
-                            <RadioButton x:Name="PanelTranscriptButton" GroupName="Panel" Content="Transcript"
-                                         Style="{StaticResource SegmentButton}" Click="OnPanelTranscriptClick"/>
-                            <RadioButton x:Name="PanelBookmarksButton" GroupName="Panel" Content="Bookmarks"
-                                         Style="{StaticResource SegmentButton}" Click="OnPanelBookmarksClick"/>
-                        </StackPanel>
+                        <DockPanel>
+                            <Button x:Name="PanelHideButton" DockPanel.Dock="Right" Style="{StaticResource IconButton}"
+                                    Content="&#xE89F;" FontSize="14" Width="32" Height="28" Margin="0,0,6,2"
+                                    ToolTip="Hide the panel. Move the mouse to the right edge to bring it back" Click="OnHidePanelClick"/>
+                            <StackPanel Orientation="Horizontal">
+                                <RadioButton x:Name="PanelPlaylistButton" GroupName="Panel" Content="Playlist" IsChecked="True"
+                                             Style="{StaticResource SegmentButton}" Click="OnPanelPlaylistClick"/>
+                                <RadioButton x:Name="PanelNotesButton" GroupName="Panel" Content="Notes"
+                                             Style="{StaticResource SegmentButton}" Click="OnPanelNotesClick"/>
+                                <RadioButton x:Name="PanelTranscriptButton" GroupName="Panel" Content="Transcript"
+                                             Style="{StaticResource SegmentButton}" Click="OnPanelTranscriptClick"/>
+                                <RadioButton x:Name="PanelBookmarksButton" GroupName="Panel" Content="Bookmarks"
+                                             Style="{StaticResource SegmentButton}" Click="OnPanelBookmarksClick"/>
+                                <RadioButton x:Name="PanelFocusButton" GroupName="Panel" Content="Focus"
+                                             Style="{StaticResource SegmentButton}" Click="OnPanelFocusClick"/>
+                            </StackPanel>
+                        </DockPanel>
                     </Border>
 
                     <!-- Playlist -->
@@ -265,10 +279,23 @@
                             <RowDefinition Height="Auto"/>
                             <RowDefinition Height="*"/>
                         </Grid.RowDefinitions>
-                        <StackPanel Margin="14,12,14,8">
-                            <TextBlock x:Name="PlaylistTitle" FontSize="14" FontWeight="SemiBold" TextTrimming="CharacterEllipsis"/>
-                            <TextBlock x:Name="PlaylistSummary" Margin="0,2,0,0" FontSize="12" Foreground="{StaticResource TextDimBrush}"/>
-                        </StackPanel>
+                        <Grid Margin="14,12,14,8">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+                            <StackPanel>
+                                <TextBlock x:Name="PlaylistTitle" FontSize="14" FontWeight="SemiBold" TextTrimming="CharacterEllipsis"/>
+                                <TextBlock x:Name="PlaylistSummary" Margin="0,2,0,0" FontSize="12" Foreground="{StaticResource TextDimBrush}"
+                                           TextTrimming="CharacterEllipsis"/>
+                            </StackPanel>
+                            <!-- the length of the whole playlist, as a clock -->
+                            <StackPanel x:Name="PlaylistTotalBox" Grid.Column="1" Margin="12,0,0,0" HorizontalAlignment="Right" Visibility="Collapsed">
+                                <TextBlock x:Name="PlaylistTotal" FontFamily="Consolas" FontSize="16" FontWeight="SemiBold" HorizontalAlignment="Right"/>
+                                <TextBlock Text="total length" FontSize="11" Margin="0,1,0,0" HorizontalAlignment="Right"
+                                           Foreground="{StaticResource TextDimBrush}"/>
+                            </StackPanel>
+                        </Grid>
                         <ListBox x:Name="PlaylistList" Grid.Row="1" Style="{StaticResource ThemedListBox}"
                                  MouseDoubleClick="OnPlaylistDoubleClick">
                             <ListBox.ItemContainerStyle>
@@ -283,7 +310,10 @@
                                         <Grid.ColumnDefinitions>
                                             <ColumnDefinition Width="22"/>
                                             <ColumnDefinition Width="*"/>
+                                            <ColumnDefinition Width="Auto"/>
                                         </Grid.ColumnDefinitions>
+                                        <TextBlock Grid.Column="2" Text="{Binding DurationText}" FontFamily="Consolas" FontSize="12"
+                                                   Margin="10,1,0,0" VerticalAlignment="Top" Foreground="{StaticResource TextDimBrush}"/>
                                         <TextBlock Text="{Binding StatusGlyph}" FontFamily="Segoe MDL2 Assets" FontSize="12"
                                                    VerticalAlignment="Top" Margin="0,3,0,0">
                                             <TextBlock.Style>
@@ -367,7 +397,7 @@
                         </ListBox>
                         <TextBlock x:Name="NoteEmpty" Grid.Row="1" Margin="18,6" TextWrapping="Wrap" VerticalAlignment="Top"
                                    Foreground="{StaticResource TextDimBrush}" IsHitTestVisible="False"
-                                   Text="No notes on this video yet. Press N while watching to write one at the current time."/>
+                                   Text="No notes on this video yet."/>
 
                         <Border Grid.Row="2" BorderBrush="{StaticResource LineBrush}" BorderThickness="0,1,0,0" Padding="12,10,12,12">
                             <StackPanel>
@@ -413,8 +443,8 @@
                                     <ColumnDefinition Width="8"/>
                                     <ColumnDefinition Width="*"/>
                                 </Grid.ColumnDefinitions>
-                                <Button Content="Set start  (I)" Style="{StaticResource TextButton}" Padding="8,5" FontSize="12" Focusable="False" Click="OnSectionStartClick"/>
-                                <Button Grid.Column="2" Content="Set end  (O)" Style="{StaticResource TextButton}" Padding="8,5" FontSize="12" Focusable="False" Click="OnSectionEndClick"/>
+                                <Button x:Name="SetStartButton" Content="Set start  (I)" Style="{StaticResource TextButton}" Padding="8,5" FontSize="12" Focusable="False" Click="OnSectionStartClick"/>
+                                <Button x:Name="SetEndButton" Grid.Column="2" Content="Set end  (O)" Style="{StaticResource TextButton}" Padding="8,5" FontSize="12" Focusable="False" Click="OnSectionEndClick"/>
                             </Grid>
                             <WrapPanel Margin="0,6,0,0">
                                 <Button Content="Last 2 min" Style="{StaticResource TextButton}" Padding="9,4" MinWidth="0" FontSize="12" Margin="0,0,6,0" Focusable="False" Click="OnSectionLast2Click"/>
@@ -551,10 +581,71 @@
                         </ListBox>
                         <TextBlock x:Name="BookmarkEmpty" Grid.Row="1" Margin="18,6" TextWrapping="Wrap" VerticalAlignment="Top"
                                    Foreground="{StaticResource TextDimBrush}" IsHitTestVisible="False"
-                                   Text="No bookmarks yet. Press Ctrl+B while playing to add one."/>
+                                   Text="No bookmarks yet."/>
                         <Button Grid.Row="2" Content="Add bookmark here" Style="{StaticResource TextButton}" Margin="14,8,14,14"
                                 Focusable="False" Click="OnAddBookmarkClick"/>
                     </Grid>
+
+                    <!-- Focus timer: study in timed sessions with breaks -->
+                    <ScrollViewer x:Name="FocusView" Grid.Row="1" Visibility="Collapsed" VerticalScrollBarVisibility="Auto">
+                        <StackPanel Margin="20,14,20,12">
+                            <Grid>
+                                <TextBlock Text="Focus session" FontSize="14" FontWeight="SemiBold"/>
+                                <TextBlock x:Name="FocusSessionText" HorizontalAlignment="Right" VerticalAlignment="Bottom" FontSize="12"
+                                           Foreground="{StaticResource TextDimBrush}"/>
+                            </Grid>
+
+                            <Grid Width="162" Height="162" Margin="0,10,0,0" HorizontalAlignment="Center">
+                                <c:RingProgress x:Name="FocusRing" Thickness="9" TrackBrush="{StaticResource LineBrush}"
+                                                ArcBrush="{StaticResource FocusBrush}"/>
+                                <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center">
+                                    <TextBlock x:Name="FocusTime" FontFamily="Consolas" FontSize="36" HorizontalAlignment="Center" Text="25:00"/>
+                                    <TextBlock x:Name="FocusPhaseLabel" FontSize="11" Margin="0,4,0,0" HorizontalAlignment="Center"
+                                               Foreground="{StaticResource TextDimBrush}" Text="FOCUS"/>
+                                </StackPanel>
+                            </Grid>
+
+                            <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,12,0,0">
+                                <Button x:Name="FocusResetButton" Style="{StaticResource CircleButton}" Content="&#xE72C;" ToolTip="Reset the timer"
+                                        Click="OnFocusResetClick"/>
+                                <Button x:Name="FocusStartButton" Style="{StaticResource CircleButton}" Width="60" Height="60" FontSize="22"
+                                        Margin="16,0" Background="{StaticResource AccentBrush}" Foreground="White" Content="&#xE768;"
+                                        ToolTip="Start" Click="OnFocusStartClick"/>
+                                <Button x:Name="FocusSkipButton" Style="{StaticResource CircleButton}" Content="&#xE893;" ToolTip="Skip to the next part"
+                                        Click="OnFocusSkipClick"/>
+                            </StackPanel>
+
+                            <StackPanel x:Name="FocusDots" Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,12,0,0">
+                                <Ellipse Width="12" Height="12" StrokeThickness="2" Margin="5,0"/>
+                                <Ellipse Width="12" Height="12" StrokeThickness="2" Margin="5,0"/>
+                                <Ellipse Width="12" Height="12" StrokeThickness="2" Margin="5,0"/>
+                                <Ellipse Width="12" Height="12" StrokeThickness="2" Margin="5,0"/>
+                            </StackPanel>
+
+                            <Border Margin="0,12,0,0" Padding="0,10,0,0" BorderBrush="{StaticResource LineBrush}" BorderThickness="0,1,0,0">
+                                <StackPanel>
+                                    <TextBlock Text="Length (focus / break, minutes)" FontSize="12" Foreground="{StaticResource TextDimBrush}"/>
+                                    <UniformGrid x:Name="FocusPresets" Rows="1" Margin="0,8,0,0">
+                                        <RadioButton GroupName="FocusPreset" Style="{StaticResource ChipToggle}" Margin="0,0,3,0" Click="OnFocusPresetClick"/>
+                                        <RadioButton GroupName="FocusPreset" Style="{StaticResource ChipToggle}" Margin="3,0" Click="OnFocusPresetClick"/>
+                                        <RadioButton GroupName="FocusPreset" Style="{StaticResource ChipToggle}" Margin="3,0" Click="OnFocusPresetClick"/>
+                                        <RadioButton GroupName="FocusPreset" Style="{StaticResource ChipToggle}" Margin="3,0,0,0" Click="OnFocusPresetClick"/>
+                                    </UniformGrid>
+                                </StackPanel>
+                            </Border>
+
+                            <StackPanel Margin="0,10,0,0">
+                                <CheckBox x:Name="FocusPauseVideoBox" Style="{StaticResource ToggleSwitch}" Content="Pause the video during breaks"
+                                          Click="OnFocusOptionClick"/>
+                                <CheckBox x:Name="FocusChimeBox" Style="{StaticResource ToggleSwitch}" Margin="0,10,0,0"
+                                          Content="Soft chime when a part ends" Click="OnFocusOptionClick"/>
+                                <CheckBox x:Name="FocusCountPlayingBox" Style="{StaticResource ToggleSwitch}" Margin="0,10,0,0"
+                                          Content="Count only while the video plays" Click="OnFocusOptionClick"/>
+                            </StackPanel>
+
+                            <TextBlock x:Name="FocusTodayText" Margin="0,12,0,0" FontSize="12" Foreground="{StaticResource TextDimBrush}"/>
+                        </StackPanel>
+                    </ScrollViewer>
                 </Grid>
             </Border>
         </Grid>
@@ -573,29 +664,40 @@
                     </Grid.ColumnDefinitions>
 
                     <StackPanel Grid.Column="0" Orientation="Horizontal">
-                        <Button Style="{StaticResource IconButton}" Content="&#xE8E5;" ToolTip="Open file (Ctrl+O)" Click="OnOpenClick"/>
-                        <Button Style="{StaticResource IconButton}" Content="&#xE892;" ToolTip="Previous video (PgUp)" Click="OnPreviousClick"/>
-                        <Button x:Name="PlayButton" Style="{StaticResource IconButton}" Content="&#xE768;" ToolTip="Play / Pause (Space)" Click="OnPlayClick"/>
-                        <Button Style="{StaticResource IconButton}" Content="&#xE893;" ToolTip="Next video (PgDn)" Click="OnNextClick"/>
+                        <Button x:Name="OpenButton" Style="{StaticResource IconButton}" Content="&#xE8E5;" ToolTip="Open file" Click="OnOpenClick"/>
+                        <Button x:Name="PrevButton" Style="{StaticResource IconButton}" Content="&#xE892;" ToolTip="Previous video" Click="OnPreviousClick"/>
+                        <Button x:Name="PlayButton" Style="{StaticResource IconButton}" Content="&#xE768;" ToolTip="Play / Pause" Click="OnPlayClick"/>
+                        <Button x:Name="NextButton" Style="{StaticResource IconButton}" Content="&#xE893;" ToolTip="Next video" Click="OnNextClick"/>
                         <Button Style="{StaticResource IconButton}" Content="&#xE71A;" ToolTip="Stop" Click="OnStopClick"/>
                     </StackPanel>
 
-                    <TextBlock x:Name="TimeText" Grid.Column="1" Margin="12,0,0,0" VerticalAlignment="Center"
-                               FontFamily="Consolas" FontSize="13" Foreground="{StaticResource TextDimBrush}" Text="00:00 / 00:00"/>
+                    <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
+                        <TextBlock x:Name="TimeText" Margin="12,0,0,0" VerticalAlignment="Center"
+                                   FontFamily="Consolas" FontSize="13" Foreground="{StaticResource TextDimBrush}" Text="00:00 / 00:00"/>
+                        <!-- the focus timer, while one is running or paused part-way -->
+                        <Button x:Name="FocusPill" Style="{StaticResource FocusPillButton}" Margin="14,0,0,0" Visibility="Collapsed"
+                                Click="OnFocusPillClick">
+                            <StackPanel Orientation="Horizontal">
+                                <c:RingProgress x:Name="FocusPillRing" Width="20" Height="20" Thickness="2.5"
+                                                TrackBrush="{StaticResource HoverBrush}" ArcBrush="{StaticResource FocusBrush}"/>
+                                <TextBlock x:Name="FocusPillText" Margin="8,0,0,0" VerticalAlignment="Center" FontFamily="Consolas" FontSize="12.5"/>
+                            </StackPanel>
+                        </Button>
+                    </StackPanel>
 
                     <TextBlock x:Name="NowPlaying" Grid.Column="2" HorizontalAlignment="Center" VerticalAlignment="Center"
                                Margin="18,0" FontSize="12.5" TextTrimming="CharacterEllipsis" Foreground="{StaticResource TextDimBrush}"/>
 
                     <StackPanel Grid.Column="3" Orientation="Horizontal">
-                        <Button Style="{StaticResource IconButton}" Content="&#xE7C1;" ToolTip="Add bookmark (Ctrl+B)" Click="OnAddBookmarkClick"/>
-                        <Button Style="{StaticResource IconButton}" Content="&#xE8FD;" ToolTip="Playlist (F6) / Bookmarks (H)" Click="OnTogglePlaylistClick"/>
+                        <Button x:Name="BookmarkButton" Style="{StaticResource IconButton}" Content="&#xE7C1;" ToolTip="Add bookmark" Click="OnAddBookmarkClick"/>
+                        <Button x:Name="PlaylistToggleButton" Style="{StaticResource IconButton}" Content="&#xE8FD;" ToolTip="Playlist / Bookmarks" Click="OnTogglePlaylistClick"/>
                         <Button x:Name="SpeedButton" Style="{StaticResource IconButton}" FontFamily="Segoe UI" FontSize="12.5"
                                 FontWeight="SemiBold" Width="56" Content="1×" Click="OnSpeedClick" Margin="6,0,0,0"
                                 ToolTip="Playback speed: click for presets. C faster, X slower, Z normal"/>
-                        <Button x:Name="MuteButton" Style="{StaticResource IconButton}" Content="&#xE767;" ToolTip="Mute (M)" Click="OnMuteClick" Margin="8,0,0,0"/>
+                        <Button x:Name="MuteButton" Style="{StaticResource IconButton}" Content="&#xE767;" ToolTip="Mute" Click="OnMuteClick" Margin="8,0,0,0"/>
                         <Slider x:Name="VolumeSlider" Style="{StaticResource ThemedSlider}" Width="90" Minimum="0" Maximum="100" Value="100"
                                 VerticalAlignment="Center" ValueChanged="OnVolumeChanged"/>
-                        <Button x:Name="FullscreenButton" Style="{StaticResource IconButton}" Content="&#xE740;" ToolTip="Fullscreen (Enter)" Click="OnFullscreenClick" Margin="8,0,0,0"/>
+                        <Button x:Name="FullscreenButton" Style="{StaticResource IconButton}" Content="&#xE740;" ToolTip="Fullscreen" Click="OnFullscreenClick" Margin="8,0,0,0"/>
                     </StackPanel>
                 </Grid>
             </StackPanel>

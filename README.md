@@ -97,6 +97,10 @@ The UI only talks to `IPlayerEngine`, so the libmpv backend can be replaced (e.g
 - Each video's position is saved every ~5 s and on exit. The playlist shows a thin progress bar for videos in progress
   and a check mark once 90% has been watched. A video that ends moves on to the next in the tab. *Mark as watched /
   unwatched* is in the playlist right-click menu.
+- Every video in the playlist shows its length (`12:34`, or `1:02:03`), and the header shows the length of the whole
+  playlist as a clock (`08:42:15`, with a `+` while it is still being worked out; hover for the time still to watch).
+  Lengths are read in the background by a second, headless libmpv, a few per second, and remembered in the library, so a
+  folder is measured once (again only for files that change).
 - Tab right-click menu: rename, rescan, show in Explorer, move left/right, close. Middle-click closes a tab. Closing a
   tab never touches the files; its progress stays in the library.
 - Data lives in `%LOCALAPPDATA%\Spectraplayer\library.db` (SQLite). Set the `SPECTRAPLAYER_DATA` environment variable to
@@ -153,6 +157,27 @@ On a modest laptop (2-core i5, no usable GPU) the standard model transcribes abo
 the accurate one takes about as long as the video. Details and measurements: `docs/milestone-4-transcription-plan.md`.
 Set `SPECTRAPLAYER_MODEL_SOURCE` to a folder-style URL to download models from your own mirror (checksums still apply).
 
+## Start-up
+
+Spectraplayer opens on its welcome screen for about three and a half seconds, then fades into the playlist that was open (the
+last video, paused where you left it). A click or key press skips the wait. With nothing to resume, the welcome screen stays.
+Opening a video directly (double-click, *Open with*) skips it altogether and just plays.
+
+## Focus timer
+
+Study in timed sessions with breaks. Open the **Focus** tab in the side panel (press `T`, or click the timer in the control
+bar). Four sessions make a round; the ring shows what is left of the current part.
+
+- **Start / pause** with the big button or `Shift+T` (which also says what it did on the video, so the panel needn't be open);
+  the round button resets the part, the arrow skips to the next one. Skipping a session does not count it.
+- **Length**: 25 / 5, 50 / 10, 90 / 15 or 40 / 8 minutes (focus / break).
+- When a part ends there is a soft chime and a message on the video. With *Pause the video during breaks* (on by default)
+  the video pauses for the break and plays on when it is over, unless you started it again yourself.
+  *Count only while the video plays* stops the clock whenever the video is paused (breaks always run).
+- While a timer is going, a small ring with the time sits in the control bar. In fullscreen it also shows in the top-right
+  corner whenever the control bar is up (and for a few seconds after a part ends), then fades out so it never gets in the way.
+- Today's focused time and session count are kept; so are the chosen length and the three options.
+
 ## Keyboard and mouse
 
 | Input | Action |
@@ -165,8 +190,8 @@ Set `SPECTRAPLAYER_MODEL_SOURCE` to a folder-style URL to download models from y
 | PgUp / PgDn | Previous / next video in the tab |
 | N | Take a note at the current time (Ctrl+Enter saves, Esc leaves the box) |
 | I / O, Shift+drag on seek bar | Mark section start / end |
-| F6 / H | Show or hide the playlist / bookmarks panel |
-| Ctrl+B | Add bookmark at the current time |
+| P / H | Show or hide the playlist / bookmarks panel (also the hide button at the top of the panel) |
+| B | Add bookmark at the current time |
 | [ / ] | Previous / next bookmark |
 | Ctrl+T / Ctrl+W | Add folder as tab / close tab |
 | Ctrl+Tab, Ctrl+Shift+Tab, Ctrl+1…9 | Switch tabs |
@@ -176,8 +201,30 @@ Set `SPECTRAPLAYER_MODEL_SOURCE` to a folder-style URL to download models from y
 | F / D | Frame step forward / back |
 | Ctrl+O | Open file |
 | Right click | Menu |
+| Ctrl+, | Settings |
+| T / Shift+T | Show the focus timer / start or pause it |
 
-The same table (`Input/KeyMap.cs`) feeds both WPF and mpv, because the video surface can take keyboard focus for itself.
+The panel slides in and out. While it is hidden, and in fullscreen, moving the mouse to the right edge of the screen slides it
+in over the video, and it slides away again when the mouse leaves. Playlist, Notes, Transcript and Bookmarks all work that way
+in fullscreen too (N opens Notes there and keeps the panel up while you type).
+
+### Changing the shortcuts
+
+These are the defaults. Open **Settings** (the gear in the title bar, Ctrl+, or the right-click menu; the F1 list has a
+*Change shortcuts…* button too) to change any of them:
+
+- click a key, then press the new one; Esc cancels;
+- **+** gives an action a second key, **×** removes a key, the arrow next to a row puts that action back to its default;
+- a key belongs to one action: if the one you press is taken, it moves over and Settings says which action lost it;
+- changes apply straight away and are remembered (in the library database, so they survive updates; a key added to the
+  defaults in a later version still reaches actions you never changed);
+- the tooltips, the right-click menu, the F1 list and the welcome screen always show your keys.
+
+Not every combination is allowed: Alt+F4 and Alt+Space belong to Windows, and Ctrl/Alt+Shift with a number or a symbol key
+is refused because what that types depends on the keyboard layout (the video surface couldn't recognise it).
+
+The key table lives in `Core/Shortcuts` (plain text, unit-tested) and `Input/KeyMap.cs`; it feeds both WPF and mpv,
+because the video surface can take keyboard focus for itself.
 
 ## Bookmarks and PotPlayer `.pbf`
 

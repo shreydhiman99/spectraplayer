@@ -58,11 +58,11 @@ public partial class MainWindow
     /// <summary>N: open the notes panel with the cursor in the note box, ready to type.</summary>
     private void BeginNote()
     {
-        if (_fullscreen) SetFullscreen(false); // the note box lives in the side panel
-        ShowPanel(PanelView.Notes);
+        ShowPanel(PanelView.Notes); // in fullscreen the panel slides in over the video
         // The panel may only just have become visible, so focus once layout has caught up.
         Dispatcher.BeginInvoke(() =>
         {
+            if (_fullscreen) _panelOverlay?.Activate(); // the note box is in the overlay window, which needs the keyboard
             NoteInput.Focus();
             Keyboard.Focus(NoteInput);
         }, DispatcherPriority.Input);
@@ -113,6 +113,7 @@ public partial class MainWindow
     {
         // Clearing only keyboard focus isn't enough: the window would hand focus straight back to its last focused element.
         FocusManager.SetFocusedElement(FocusManager.GetFocusScope(NoteInput), null);
+        if (!IsActive) Activate(); // in fullscreen the note box sits in the panel's own window
         Keyboard.Focus(this);
     }
 
@@ -132,7 +133,7 @@ public partial class MainWindow
 
     private void OnAddNoteClick(object sender, RoutedEventArgs e) => AddNoteFromComposer();
     private void OnTakeNoteClick(object sender, RoutedEventArgs e) => BeginNote();
-    private void OnPanelNotesClick(object sender, RoutedEventArgs e) => ShowPanel(PanelView.Notes);
+    private void OnPanelNotesClick(object sender, RoutedEventArgs e) => SwitchPanelView(PanelView.Notes);
 
     private void AddNoteFromComposer()
     {

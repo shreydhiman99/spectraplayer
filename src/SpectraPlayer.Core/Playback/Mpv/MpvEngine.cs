@@ -19,6 +19,7 @@ public sealed class MpvEngine : IPlayerEngine
     private double _position, _duration, _volume = 100, _speed = 1;
     private volatile bool _paused, _muted, _hasMedia;
     private double _pendingStart; // seconds; applied again right after the file loads (0 = none)
+    private volatile bool _assertPauseOnLoad, _loadPaused; // see Dispatch(EventFileLoaded)
 
     public event EventHandler? FileLoaded;
     public event EventHandler? EndReached;
@@ -108,6 +109,8 @@ public sealed class MpvEngine : IPlayerEngine
         Volatile.Write(ref _position, start?.TotalSeconds ?? 0);
         Volatile.Write(ref _duration, 0);
         _paused = paused;
+        _loadPaused = paused;
+        _assertPauseOnLoad = true;
         Volatile.Write(ref _pendingStart, start is { } p && p > TimeSpan.Zero ? p.TotalSeconds : 0);
         SetProperty("pause", paused ? "yes" : "no");
 
@@ -151,6 +154,8 @@ public sealed class MpvEngine : IPlayerEngine
 
     public void BindKey(string key, string message) => Command("keybind", key, "script-message " + message);
 
+    public void UnbindKey(string key) => Command("keybind", key, "ignore");
+
     public void ShowText(string text, TimeSpan? duration = null) =>
         Command("show-text", text, ((int)(duration ?? TimeSpan.FromSeconds(1.5)).TotalMilliseconds).ToString(CultureInfo.InvariantCulture));
 
@@ -193,6 +198,14 @@ public sealed class MpvEngine : IPlayerEngine
         {
             case EventFileLoaded:
                 _hasMedia = true;
+                // When the previous file ended (mpv keeps the last frame and pauses there) and the next was loaded at once,
+                // mpv can re-pause after we asked it to play, and tell nobody: the new video then sits at 00:00 while the
+                // player believes it is playing. Saying what we want once more, now that the file is loaded, settles it.
+                if (_assertPauseOnLoad)
+                {
+                    _assertPauseOnLoad = false;
+                    SetProperty("pause", _loadPaused ? "yes" : "no");
+                }
                 // A file that loads paused at a start offset doesn't always report its time until it moves.
                 // Seeking to the same spot explicitly makes mpv publish the position (and show that exact frame).
                 var pending = Volatile.Read(ref _pendingStart);

@@ -35,7 +35,7 @@ public partial class MainWindow : Window
     private long _holdPositionUntil; // after a seek, keep showing the target until the player catches up
 
     // fullscreen state
-    private bool _fullscreen, _panelWasVisible;
+    private bool _fullscreen;
     private WindowState _restoreState;
     private Rect _restoreBounds;
     private FullscreenOverlay? _overlay;
@@ -43,6 +43,7 @@ public partial class MainWindow : Window
     public MainWindow(string? startupFile = null)
     {
         _startupFile = startupFile;
+        _splashActive = startupFile is null; // launched with a video: no welcome hold, just play
         InitializeComponent();
 
         // Never open taller/wider than the usable screen area (small laptop screens would hide the control bar).
@@ -59,8 +60,12 @@ public partial class MainWindow : Window
         InitializeSection();
         InitializeTranscript();
         InitializeWelcome();
+        InitializeFocus();
+        InitializeShortcuts();
+        ContentRendered += (_, _) => BeginSplash(); // the welcome hold counts from when the window is really on screen
         LoadTabs();
         RestorePanelState();
+        InitializePanel();
         _engine.EndReached += (_, _) => Dispatcher.BeginInvoke(OnEndReached);
 
         _ticker.Tick += OnTick;
@@ -84,7 +89,7 @@ public partial class MainWindow : Window
             _engine.Initialize(Video.Handle);
 
             // Key presses and mouse clicks on the video surface go to mpv, not WPF. Route them back as messages.
-            foreach (var b in KeyMap.All) _engine.BindKey(b.MpvKey, $"spectra action {b.Action}");
+            SyncMpvKeys();
             _engine.BindKey("MBTN_LEFT", "spectra click");
             _engine.BindKey("MBTN_LEFT_DBL", "spectra dblclick");
             _engine.BindKey("MBTN_RIGHT", "spectra rclick");
@@ -240,6 +245,9 @@ public partial class MainWindow : Window
             case PlayerAction.SpeedDown: ChangeSpeed(_engine.Speed - 0.25); break;
             case PlayerAction.SpeedReset: ChangeSpeed(1); break;
             case PlayerAction.ShowShortcuts: ShowShortcuts(); break;
+            case PlayerAction.OpenSettings: ShowSettings(); break;
+            case PlayerAction.ShowFocus: TogglePanel(PanelView.Focus); break;
+            case PlayerAction.ToggleFocusTimer: ToggleFocusFromKey(); break;
             case PlayerAction.FrameStep: if (_engine.HasMedia) _engine.FrameStep(); break;
             case PlayerAction.FrameBackStep: if (_engine.HasMedia) _engine.FrameBackStep(); break;
         }
@@ -422,7 +430,12 @@ public partial class MainWindow : Window
         {
             _restoreState = WindowState;
             _restoreBounds = WindowState == WindowState.Normal ? new Rect(Left, Top, Width, Height) : RestoreBounds;
-            _panelWasVisible = SidePanel.Visibility == Visibility.Visible;
+            // The docked panel gives way; in fullscreen it slides in over the video instead (see MainWindow.Panel.cs).
+            if (_peeking) EndPeek(dock: false);
+            _panelGeneration++;
+            SidePanel.BeginAnimation(WidthProperty, null);
+            SidePanel.Width = PanelWidth;
+            _slidingOut = false;
             SidePanel.Visibility = Visibility.Collapsed;
             TabBar.Visibility = Visibility.Collapsed;
 
@@ -441,6 +454,8 @@ public partial class MainWindow : Window
         {
             _overlayTimer.Stop();
             VideoArea.Cursor = null;
+            if (_peeking) EndPeek(dock: false);
+            _focusHud?.HideNow();
             if (_overlay is not null)
             {
                 _overlay.Content = null;
@@ -457,7 +472,7 @@ public partial class MainWindow : Window
             Width = _restoreBounds.Width; Height = _restoreBounds.Height;
             if (_restoreState == WindowState.Maximized) WindowState = WindowState.Maximized;
 
-            SidePanel.Visibility = _panelWasVisible ? Visibility.Visible : Visibility.Collapsed;
+            SidePanel.Visibility = _panelPinned ? Visibility.Visible : Visibility.Collapsed;
             FullscreenButton.Content = "";
         }
     }
@@ -474,6 +489,8 @@ public partial class MainWindow : Window
             _overlay.Show();
             _overlay.UpdateLayout();
             _overlay.Top = (bounds.Y + bounds.Height) / dpi.DpiScaleY - _overlay.ActualHeight;
+            FitPeekToControlBar();
+            UpdateFocusHud(); // the corner timer comes up with the control bar
         }
 
         _overlayTimer.Stop();
@@ -488,6 +505,8 @@ public partial class MainWindow : Window
         if (overlay.IsMouseOver || Mouse.Captured is not null) return;
 
         overlay.Hide();
+        FitPeekToControlBar();
+        UpdateFocusHud(); // ...and fades away with it
         _overlayTimer.Stop();
         if (_fullscreen) VideoArea.Cursor = Cursors.None; // hide the pointer along with the controls
     }
@@ -506,6 +525,7 @@ public partial class MainWindow : Window
 
     private void OnPreviewKeyDown(object sender, KeyEventArgs e)
     {
+        EndSplash(fade: false); // a key press skips the welcome hold
         if (Keyboard.FocusedElement is TextBox) return; // typing in a dialog or field
 
         var key = e.Key == Key.System ? e.SystemKey : e.Key;
@@ -520,6 +540,11 @@ public partial class MainWindow : Window
     {
         _ticker.Stop();
         _overlayTimer.Stop();
+        _edgeTimer.Stop();
+        _focusTicker.Stop();
+        _splashTimer?.Stop();
+        SaveFocus();
+        _measureCts?.Cancel();
         _clickTimer.Stop();
         _transcribeCts?.Cancel();
         SaveCurrentProgress();

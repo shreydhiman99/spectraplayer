@@ -56,5 +56,8 @@ public interface IPlayerEngine : IDisposable
     /// </summary>
     void BindKey(string key, string message);
 
+    /// <summary>Stops a key bound with <see cref="BindKey"/> from sending anything (the engine has no other bindings).</summary>
+    void UnbindKey(string key);
+
     void ShowText(string text, TimeSpan? duration = null);
 }

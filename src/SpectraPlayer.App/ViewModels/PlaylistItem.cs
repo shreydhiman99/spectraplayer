@@ -21,6 +21,19 @@ public sealed class PlaylistItem : INotifyPropertyChanged
     public string Subfolder { get; }
     public bool HasSubfolder => Subfolder.Length > 0;
 
+    /// <summary>How long the video is: null until it has been measured, zero if its length can't be read.</summary>
+    public TimeSpan? Duration { get; private set; }
+
+    public void SetDuration(TimeSpan duration)
+    {
+        if (Duration == duration) return;
+        Duration = duration;
+        Changed();
+    }
+
+    /// <summary>"12:34" or "1:02:03"; empty until the length is known (or if it can't be read).</summary>
+    public string DurationText => Duration is { } d && d > TimeSpan.Zero ? SpectraPlayer.Core.TimeFormat.Format(TimeSpan.FromSeconds(Math.Round(d.TotalSeconds))) : string.Empty;
+
     public double Progress => _progress;
     public bool IsWatched => _isWatched;
     public bool IsCurrent => _isCurrent;

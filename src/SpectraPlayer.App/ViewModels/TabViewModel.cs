@@ -36,5 +36,16 @@ public sealed class TabViewModel : INotifyPropertyChanged
 
     public int WatchedCount => Items.Count(i => i.IsWatched);
 
+    /// <summary>Length of the whole playlist, counting only the videos measured so far.</summary>
+    public TimeSpan TotalDuration => TimeSpan.FromTicks(Items.Sum(i => i.Duration?.Ticks ?? 0));
+
+    /// <summary>How many videos still wait to be measured (unreadable ones count as done).</summary>
+    public int UnmeasuredCount => Items.Count(i => i.Duration is null);
+
+    /// <summary>What is left to watch: unwatched videos, less the part already played.</summary>
+    public TimeSpan RemainingDuration =>
+        TimeSpan.FromTicks((long)Items.Where(i => !i.IsWatched && i.Duration is not null)
+            .Sum(i => i.Duration!.Value.Ticks * (1 - Math.Clamp(i.Progress, 0, 1))));
+
     public event PropertyChangedEventHandler? PropertyChanged;
 }

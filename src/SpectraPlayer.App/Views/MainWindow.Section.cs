@@ -86,7 +86,7 @@ public partial class MainWindow
 
     private void OnSectionStartClick(object sender, RoutedEventArgs e) => MarkSection(start: true);
     private void OnSectionEndClick(object sender, RoutedEventArgs e) => MarkSection(start: false);
-    private void OnPanelTranscriptClick(object sender, RoutedEventArgs e) => ShowPanel(PanelView.Transcript);
+    private void OnPanelTranscriptClick(object sender, RoutedEventArgs e) => SwitchPanelView(PanelView.Transcript);
 
     private void OnSectionDragged(object? sender, SectionDraggedEventArgs e)
     {

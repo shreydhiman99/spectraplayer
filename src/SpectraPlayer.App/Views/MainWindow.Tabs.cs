@@ -15,7 +15,7 @@ namespace SpectraPlayer.App.Views;
 // Tabs (one folder per subject), the playlist of the active tab, resume positions, and the side panel switcher.
 public partial class MainWindow
 {
-    private enum PanelView { Playlist, Notes, Transcript, Bookmarks }
+    private enum PanelView { Playlist, Notes, Transcript, Bookmarks, Focus }
 
     private static readonly IReadOnlyList<MediaEntry> NoEntries = [];
 
@@ -150,6 +150,7 @@ public partial class MainWindow
         if (tab != _activeTab) return;
         SetCurrentItem(FindItem(tab, _currentPath));
         UpdatePlaylistHeader(tab);
+        Forget(MeasureTabAsync(tab)); // the lengths for the header fill in as they become known
     }
 
     private void SetSelectedTab(TabViewModel? tab)
@@ -355,6 +356,7 @@ public partial class MainWindow
         catch (SqliteException) { return; }
 
         if (FindItem(_activeTab, path) is not { } item) return;
+        LearnDuration(item, duration);
         var wasWatched = item.IsWatched;
         item.ApplyProgress(record);
         if (wasWatched != item.IsWatched && _activeTab is not null) UpdatePlaylistHeader(_activeTab);
@@ -366,14 +368,15 @@ public partial class MainWindow
         {
             PlaylistTitle.Text = string.Empty;
             PlaylistSummary.Text = string.Empty;
-            PlaylistEmpty.Text = "No tabs yet. Add a folder with the + button (Ctrl+T), for example one folder per subject.";
+            PlaylistTotalBox.Visibility = Visibility.Collapsed;
+            PlaylistEmpty.Text = NoTabsText();
             PlaylistEmpty.Visibility = Visibility.Visible;
             return;
         }
 
         var count = tab.Items.Count;
         PlaylistTitle.Text = tab.Title;
-        PlaylistSummary.Text = count == 0 ? string.Empty : $"{count} video{(count == 1 ? "" : "s")} · {tab.WatchedCount} watched";
+        ShowPlaylistSummary(tab);
         PlaylistEmpty.Text = scanning ? "Scanning folder…"
             : tab.FolderMissing ? $"This folder can't be found:\n{tab.Folder}"
             : "No video files in this folder.";
@@ -394,57 +397,10 @@ public partial class MainWindow
             : Path.GetFileNameWithoutExtension(_currentPath);
     }
 
-    // ---- side panel ------------------------------------------------------------------------------------------
-
-    private void RestorePanelState()
-    {
-        switch (_library.GetSetting("panel"))
-        {
-            case "bookmarks": ShowPanel(PanelView.Bookmarks); break;
-            case "notes": ShowPanel(PanelView.Notes); break;
-            case "transcript": ShowPanel(PanelView.Transcript); break;
-            case "hidden": ShowPanel(PanelView.Playlist); SidePanel.Visibility = Visibility.Collapsed; break;
-            default: ShowPanel(PanelView.Playlist); break;
-        }
-    }
-
-    private void ShowPanel(PanelView view)
-    {
-        _panelView = view;
-        PlaylistView.Visibility = view == PanelView.Playlist ? Visibility.Visible : Visibility.Collapsed;
-        NotesView.Visibility = view == PanelView.Notes ? Visibility.Visible : Visibility.Collapsed;
-        TranscriptView.Visibility = view == PanelView.Transcript ? Visibility.Visible : Visibility.Collapsed;
-        PanelTranscriptButton.IsChecked = view == PanelView.Transcript;
-        BookmarksView.Visibility = view == PanelView.Bookmarks ? Visibility.Visible : Visibility.Collapsed;
-        PanelPlaylistButton.IsChecked = view == PanelView.Playlist;
-        PanelNotesButton.IsChecked = view == PanelView.Notes;
-        PanelBookmarksButton.IsChecked = view == PanelView.Bookmarks;
-        SidePanel.Visibility = Visibility.Visible;
-        SavePanelState();
-    }
-
-    private void TogglePanel(PanelView view)
-    {
-        if (_fullscreen) return;
-        if (SidePanel.Visibility == Visibility.Visible && _panelView == view)
-        {
-            SidePanel.Visibility = Visibility.Collapsed;
-            SavePanelState();
-        }
-        else
-        {
-            ShowPanel(view);
-        }
-    }
-
-    private void SavePanelState() =>
-        _library.SetSetting("panel", SidePanel.Visibility != Visibility.Visible ? "hidden"
-            : _panelView switch { PanelView.Bookmarks => "bookmarks", PanelView.Notes => "notes", PanelView.Transcript => "transcript", _ => "playlist" });
-
     // ---- events: panel switcher, tabs ------------------------------------------------------------------------
 
-    private void OnPanelPlaylistClick(object sender, RoutedEventArgs e) => ShowPanel(PanelView.Playlist);
-    private void OnPanelBookmarksClick(object sender, RoutedEventArgs e) => ShowPanel(PanelView.Bookmarks);
+    private void OnPanelPlaylistClick(object sender, RoutedEventArgs e) => SwitchPanelView(PanelView.Playlist);
+    private void OnPanelBookmarksClick(object sender, RoutedEventArgs e) => SwitchPanelView(PanelView.Bookmarks);
     private void OnNewTabClick(object sender, RoutedEventArgs e) => PromptAddTabs();
     private void OnPreviousClick(object sender, RoutedEventArgs e) => PlayPrevious();
     private void OnNextClick(object sender, RoutedEventArgs e) => PlayNext(auto: false);
